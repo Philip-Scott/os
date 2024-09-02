@@ -1,4 +1,8 @@
-# image-template
+# OS
+
+```bash
+rpm-ostree rebase ostree-unverified-registry:ghcr.io/philip-scott/os
+```
 
 # Purpose
 
