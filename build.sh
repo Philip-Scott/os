@@ -9,7 +9,6 @@ sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.micros
 rpm-ostree install screen conky pass htop code azure-cli
 
 # Intall AZCopy systemwide
-mkdir -p /usr/local/bin
-curl -L https://aka.ms/downloadazcopy-v10-linux | tar --strip-components=1 -C /usr/local/bin --no-same-owner --exclude=*.txt -xzvf -| chmod 755 /usr/local/bin/azcopy
+curl -L https://aka.ms/downloadazcopy-v10-linux | tar --strip-components=1 -C /usr/bin --no-same-owner --exclude=*.txt -xzvf -| chmod 755 /usr/bin/azcopy
 
 systemctl enable podman.socket
