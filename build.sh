@@ -8,5 +8,7 @@ sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.micros
 
 rpm-ostree install screen conky pass htop code azure-cli
 
+# Install kwin-scripts for desktop tweaks
+kpackagetool6 --type=KWin/Script -i ./kwin-scripts/virtual-desktops-only-on-primary/ --global
 
 systemctl enable podman.socket
