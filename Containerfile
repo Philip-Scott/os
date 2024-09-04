@@ -51,8 +51,8 @@ FROM ghcr.io/ublue-os/${SOURCE_IMAGE}${SOURCE_SUFFIX}:${SOURCE_TAG}
 COPY build.sh /tmp/build.sh
 COPY kwin-scripts /tmp/kwin-scripts
 
-
 RUN mkdir -p /var/lib/alternatives && \
+    cd /tmp/ && \
     /tmp/build.sh && \
     ostree container commit
 ## NOTES:
