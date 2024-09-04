@@ -1,42 +1,63 @@
 var primaryScreen = 0;
 
-function bind(window) {
-    window.previousScreen = window.screen;
-    window.screenChanged.connect(window, update);
-    window.desktopChanged.connect(window, update);
-    print("Window " + window.windowId + " has been bound");
-}
+function updatePrimaryScreen() {
+    var dockScreens = [];
+    for (const window of workspace.windowList()) {
+        if (window.dock) {
+            dockScreens.push(window.output);
+        }
+    }
 
-function update(window) {
-    var window = window || this;
-    
-    if (window.desktopWindow || window.dock || (!window.normalWindow && window.skipTaskbar)) {
+    if (dockScreens.length === 1) {
+        primaryScreen = dockScreens[0];
         return;
     }
 
-    var currentScreen = window.screen;
-    var previousScreen = window.previousScreen;
-    window.previousScreen = currentScreen;
-
-    if (currentScreen != primaryScreen) {
-        window.desktop = -1;
-        print("Window " + window.windowId + " has been pinned");
-    } else if (previousScreen != primaryScreen) {
-        window.desktop = workspace.currentDesktop;
-        print("Window " + window.windowId + " has been unpinned");
-    }
+    primaryScreen = 0;
+    return;
 }
 
-function bindUpdate(window) {
-    bind(window);
+function bind(window) {
+    var update = function (window) {
+        var window = window || this;
+
+        if (
+            window.desktopWindow ||
+            window.dock ||
+            (!window.normalWindow && window.skipTaskbar)
+        ) {
+            return;
+        }
+
+        var currentScreen = window.output;
+        var previousScreen = window.previousScreen;
+        window.previousScreen = currentScreen;
+
+        if (currentScreen != primaryScreen) {
+            window.desktops = [];
+            print("Window " + window.internalId + " has been pinned");
+        } else if (previousScreen != primaryScreen) {
+            window.desktops = workspace.currentDesktop;
+            print("Window " + window.internalId + " has been unpinned");
+        }
+    };
+
+    window.previousScreen = window.output;
+
     update(window);
+
+    window.outputChanged.connect(window, update);
+    window.desktopsChanged.connect(window, update);
+    print("Window " + window.internalId + " has been bound");
 }
 
 function main() {
-    primaryScreen = workspace.activeScreen;
-    workspace.clientList().forEach(bind);
-    workspace.clientList().forEach(update);
-    workspace.clientAdded.connect(bindUpdate);
+    updatePrimaryScreen();
+    
+    workspace.windowList().forEach(bind);
+    workspace.windowAdded.connect(bind);
+
+    workspace.screensChanged.connect(updatePrimaryScreen)
 }
 
 main();

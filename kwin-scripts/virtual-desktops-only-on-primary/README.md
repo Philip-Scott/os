@@ -6,4 +6,10 @@ When the script is enabled, all windows placed on monitors other than the primar
 
 Besides enabling the script in the System Settings, no additional steps are required.
 
-Taken from <https://github.com/wsdfhjxc/kwin-scripts>
+Based from <https://github.com/hnjae/kwin-scripts/blob/main/virtual-desktops-only-on-primary/contents/code/main.js>, but updated for Plasma 6.1
+
+## Manual Install
+
+```bash
+kpackagetool6 --type=KWin/Script -i ./
+```

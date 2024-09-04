@@ -1,0 +1,18 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "wsdfhjxc"
+            }
+        ],
+        "Description": "Switchable virtual desktops only on the primary monitor",
+
+        "Icon": "preferences-desktop-virtual",
+        "Id": "virtualdesktopsonlyonprimary",
+        "License": "GPL",
+        "Name": "Virtual Desktops Only On Primary"
+        
+    },
+    "X-Plasma-API": "javascript"
+}
