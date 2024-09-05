@@ -10,41 +10,38 @@ function updatePrimaryScreen() {
 
     if (dockScreens.length === 1) {
         primaryScreen = dockScreens[0];
+    } else {
+        primaryScreen = 0;
+    }
+
+    workspace.windowList().forEach(update);}
+
+function update(window) {
+    var window = window || this;
+
+    if (
+        window.desktopWindow ||
+        window.dock ||
+        (!window.normalWindow && window.skipTaskbar)
+    ) {
         return;
     }
 
-    primaryScreen = 0;
-    return;
-}
+    var currentScreen = window.output;
+    var previousScreen = window.previousScreen;
+    window.previousScreen = currentScreen;
+
+    if (currentScreen != primaryScreen) {
+        window.desktops = [];
+        print("Window " + window.internalId + " has been pinned");
+    } else if (previousScreen != primaryScreen) {
+        window.desktops = [workspace.currentDesktop];
+        print("Window " + window.internalId + " has been unpinned");
+    }
+};
 
 function bind(window) {
-    var update = function (window) {
-        var window = window || this;
-
-        if (
-            window.desktopWindow ||
-            window.dock ||
-            (!window.normalWindow && window.skipTaskbar)
-        ) {
-            return;
-        }
-
-        var currentScreen = window.output;
-        var previousScreen = window.previousScreen;
-        window.previousScreen = currentScreen;
-
-        if (currentScreen != primaryScreen) {
-            window.desktops = [];
-            print("Window " + window.internalId + " has been pinned");
-        } else if (previousScreen != primaryScreen) {
-            window.desktops = [workspace.currentDesktop];
-            print("Window " + window.internalId + " has been unpinned");
-        }
-    };
-
     window.previousScreen = window.output;
-
-    update(window);
 
     window.outputChanged.connect(window, update);
     window.desktopsChanged.connect(window, update);
@@ -55,6 +52,8 @@ function main() {
     updatePrimaryScreen();
     
     workspace.windowList().forEach(bind);
+
+    workspace.windowAdded.connect(updatePrimaryScreen);
     workspace.windowAdded.connect(bind);
 
     workspace.screensChanged.connect(updatePrimaryScreen)
