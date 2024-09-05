@@ -37,7 +37,7 @@ function bind(window) {
             window.desktops = [];
             print("Window " + window.internalId + " has been pinned");
         } else if (previousScreen != primaryScreen) {
-            window.desktops = workspace.currentDesktop;
+            window.desktops = [workspace.currentDesktop];
             print("Window " + window.internalId + " has been unpinned");
         }
     };
