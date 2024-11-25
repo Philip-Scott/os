@@ -36,7 +36,8 @@ ARG SOURCE_IMAGE="bazzite"
 ARG SOURCE_SUFFIX="-nvidia"
 
 ## SOURCE_TAG arg must be a version built for the specific image: eg, 39, 40, gts, latest
-ARG SOURCE_TAG="latest"
+ARG SOURCE_TAG="40"
+# Pinning to 40 as Wayland is the default on 41, which currently causes external displays to go at half FPS
 
 
 ### 2. SOURCE IMAGE
