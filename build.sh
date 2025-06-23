@@ -11,7 +11,7 @@ rpm-ostree install screen conky pass htop code azure-cli obs-studio autofs oktet
 ls -lar
 
 # Install kwin-scripts for desktop tweaks
-kpackagetool6 --type=KWin/Script -i ./kwin-scripts/dynamic-workspaces/ --global
-kpackagetool6 --type=KWin/Script -i ./kwin-scripts/virtual-desktops-only-on-primary/ --global
+# kpackagetool6 --type=KWin/Script -i ./kwin-scripts/dynamic-workspaces/ --global
+# kpackagetool6 --type=KWin/Script -i ./kwin-scripts/virtual-desktops-only-on-primary/ --global
 
 systemctl enable podman.socket
