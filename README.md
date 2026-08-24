@@ -4,6 +4,34 @@
 rpm-ostree rebase ostree-unverified-registry:ghcr.io/philip-scott/os
 ```
 
+# ZFS
+
+This image bundles OpenZFS so ZFS pools (for example a drive holding a
+[Restic](https://restic.net/) repository) can be imported and mounted.
+
+Universal Blue only publishes prebuilt ZFS kmods for the `coreos-stable`,
+`coreos-testing`, `longterm` and `centos` kernel flavors, and Bazzite ships the
+OGC kernel. The `zfs-builder` stage in the `Containerfile` therefore compiles
+the module from the signed OpenZFS release tarball against the exact kernel in
+the base image, and only the resulting RPMs are copied into the final image.
+
+`ZFS_VERSION` in the `Containerfile` has to stay compatible with the base image
+kernel. The build fails with an explicit message when the kernel moves past the
+`Linux-Maximum` declared by that OpenZFS release; bump `ZFS_VERSION` to a
+release that supports the new kernel.
+
+The module is autoloaded at boot and `zfs-import-cache`, `zfs-mount` and
+`zfs-zed` are enabled, so previously imported pools come back automatically:
+
+```bash
+sudo zpool import <pool>
+restic -r /<pool>/<dataset>/<repo> snapshots
+```
+
+> [!NOTE]
+> The module is built locally and is **not** signed with an enrolled MOK, so it
+> will not load while Secure Boot is enabled.
+
 # Purpose
 
 This repository is meant to be a template for building your own custom Universal Blue image. This template is the recommended way to make customizations to any image published by the Universal Blue Project:
