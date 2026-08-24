@@ -23,17 +23,4 @@ ls -lar
 # Install kwin-scripts for desktop tweaks
 # kpackagetool6 --type=KWin/Script -i ./kwin-scripts/dynamic-workspaces/ --global
 # kpackagetool6 --type=KWin/Script -i ./kwin-scripts/virtual-desktops-only-on-primary/ --global
-
 systemctl enable podman.socket
-
-# Do not import or mount ZFS pools at boot. The ZFS RPM presets enable these
-# units on install, so disable them explicitly. They are only disabled, not
-# masked, so pools can still be imported/mounted manually afterwards
-# (e.g. `zpool import <pool>` or `systemctl start zfs-mount.service`).
-for unit in zfs-import-cache.service zfs-import-scan.service zfs-mount.service \
-    zfs-share.service zfs-zed.service zfs-volume-wait.service \
-    zfs-import.target zfs-volumes.target zfs.target; do
-    if [ -e "/usr/lib/systemd/system/${unit}" ]; then
-        systemctl disable "${unit}"
-    fi
-done
