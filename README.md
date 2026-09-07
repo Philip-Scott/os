@@ -1,7 +1,23 @@
 # OS
 
+Two images are built from this repository:
+
+| Image | Base | Intended hardware |
+| --- | --- | --- |
+| `ghcr.io/philip-scott/os` | [`bazzite`](https://github.com/ublue-os/bazzite/pkgs/container/bazzite) | AMD/Intel GPUs |
+| `ghcr.io/philip-scott/os-nvidia` | [`bazzite-nvidia-open`](https://github.com/ublue-os/bazzite/pkgs/container/bazzite-nvidia-open) | Nvidia GPUs (open kernel modules) |
+
+Both images share the same `Containerfile` and `build.sh`; the workflow builds
+them in a matrix, passing `SOURCE_IMAGE` and `IMAGE_VARIANT` as build args. The
+Nvidia image skips the ROCm packages (`rocm-smi`, `rocm-hip`, `rocm-opencl`,
+`rocminfo`), which are only useful on AMD GPUs.
+
 ```bash
+# AMD/Intel
 rpm-ostree rebase ostree-unverified-registry:ghcr.io/philip-scott/os
+
+# Nvidia
+rpm-ostree rebase ostree-unverified-registry:ghcr.io/philip-scott/os-nvidia
 ```
 
 # ZFS
