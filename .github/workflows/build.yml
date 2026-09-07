@@ -14,19 +14,36 @@ on:
   workflow_dispatch:
 
 env:
-  MY_IMAGE_NAME: "${{ github.event.repository.name }}"  # the name of the image produced by this build, matches repo names
-  MY_IMAGE_DESC: "My Customized Universal Blue Image"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
 
 jobs:
   build_push:
-    name: Build and push image
+    name: Build and push image (${{ matrix.name }})
     runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # AMD/Intel image, keeps the repository name
+          - name: default
+            image_suffix: ""
+            source_image: bazzite
+            image_desc: "My Customized Universal Blue Image"
+          # Nvidia image, based on bazzite-nvidia-open
+          - name: nvidia
+            image_suffix: "-nvidia"
+            source_image: bazzite-nvidia-open
+            image_desc: "My Customized Universal Blue Image (Nvidia)"
 
     permissions:
       contents: read
       packages: write
       id-token: write
+
+    env:
+      MY_IMAGE_NAME: "${{ github.event.repository.name }}${{ matrix.image_suffix }}"  # matches the repo name, plus a variant suffix
+      MY_IMAGE_DESC: "${{ matrix.image_desc }}"
 
     steps:
       # Checkout push-to-registry action GitHub repository
@@ -101,6 +118,9 @@ jobs:
           image: ${{ env.MY_IMAGE_NAME }}
           tags: |
             ${{ steps.generate-tags.outputs.alias_tags }}
+          build-args: |
+            SOURCE_IMAGE=${{ matrix.source_image }}
+            IMAGE_VARIANT=${{ matrix.name }}
           labels: ${{ steps.meta.outputs.labels }}
           oci: false
 

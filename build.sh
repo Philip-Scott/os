@@ -3,10 +3,20 @@ set -ouex pipefail
 
 RELEASE="$(rpm -E %fedora)"
 
+# Which hardware variant is being built: "default" (AMD/Intel) or "nvidia".
+IMAGE_VARIANT="${IMAGE_VARIANT:-default}"
+
 # Install Microsoft repos for VSCode
 sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
 
-rpm-ostree install screen conky pass htop code azure-cli obs-studio autofs okteta mkvtoolnix rocm-smi rocm-hip rocm-opencl rocminfo docker docker-compose nethogs restic 
+PACKAGES=(screen conky pass htop code azure-cli obs-studio autofs okteta mkvtoolnix docker docker-compose nethogs restic)
+
+# ROCm is only useful on AMD GPUs, so it is left out of the Nvidia image.
+if [ "${IMAGE_VARIANT}" != "nvidia" ]; then
+    PACKAGES+=(rocm-smi rocm-hip rocm-opencl rocminfo)
+fi
+
+rpm-ostree install "${PACKAGES[@]}"
 
 # ZFS: kmod plus userland tools built against this image's kernel by the
 # zfs-builder stage. Pools are imported and mounted manually, not at boot.
