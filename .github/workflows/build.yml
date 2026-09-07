@@ -33,7 +33,7 @@ jobs:
           # Nvidia image, based on bazzite-nvidia-open
           - name: nvidia
             image_suffix: "-nvidia"
-            source_image: bazzite-nvidia-open
+            source_image: bazzite-nvidia
             image_desc: "My Customized Universal Blue Image (Nvidia)"
 
     permissions:
