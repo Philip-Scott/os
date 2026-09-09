@@ -9,7 +9,7 @@ IMAGE_VARIANT="${IMAGE_VARIANT:-default}"
 # Install Microsoft repos for VSCode
 sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
 
-PACKAGES=(screen conky pass htop code azure-cli obs-studio autofs okteta mkvtoolnix docker docker-compose nethogs restic)
+PACKAGES=(screen conky pass htop code azure-cli obs-studio autofs okteta mkvtoolnix docker docker-compose nethogs restic deskflow)
 
 # ROCm is only useful on AMD GPUs, so it is left out of the Nvidia image.
 if [ "${IMAGE_VARIANT}" != "nvidia" ]; then
