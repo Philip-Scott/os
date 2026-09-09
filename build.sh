@@ -18,6 +18,32 @@ fi
 
 rpm-ostree install "${PACKAGES[@]}"
 
+DESKFLOW_VERSION="1.26.0"
+case "$(uname -m)" in
+    x86_64|aarch64)
+        DESKFLOW_ARCH="$(uname -m)"
+        ;;
+    *)
+        echo "Unsupported Deskflow architecture: $(uname -m)" >&2
+        exit 1
+        ;;
+esac
+case "${RELEASE}" in
+    42)
+        DESKFLOW_FEDORA_RELEASE="42"
+        ;;
+    *)
+        DESKFLOW_FEDORA_RELEASE="43"
+        ;;
+esac
+DESKFLOW_RPM="deskflow-${DESKFLOW_VERSION}-fedora-${DESKFLOW_FEDORA_RELEASE}-${DESKFLOW_ARCH}.rpm"
+DESKFLOW_RELEASE_URL="https://github.com/deskflow/deskflow/releases/download/v${DESKFLOW_VERSION}"
+curl -sSfL -o "/tmp/${DESKFLOW_RPM}" "${DESKFLOW_RELEASE_URL}/${DESKFLOW_RPM}"
+curl -sSfL -o /tmp/deskflow-sums.txt "${DESKFLOW_RELEASE_URL}/sums.txt"
+cd /tmp
+grep -F "  ${DESKFLOW_RPM}" deskflow-sums.txt | sha256sum -c -
+rpm-ostree install "/tmp/${DESKFLOW_RPM}"
+
 # ZFS: kmod plus userland tools built against this image's kernel by the
 # zfs-builder stage. Pools are imported and mounted manually, not at boot.
 rpm-ostree install /tmp/zfs-rpms/*.rpm
