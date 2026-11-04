@@ -16,6 +16,9 @@ FROM ghcr.io/ublue-os/${SOURCE_IMAGE}:${SOURCE_TAG} AS zfs-builder
 ARG ZFS_VERSION
 
 COPY build-zfs.sh /tmp/build-zfs.sh
+# Previously built RPMs (restored from the CI cache). Reused by build-zfs.sh
+# when they match the kernel and ZFS_VERSION, otherwise ignored.
+COPY zfs-rpms /tmp/zfs-prebuilt
 
 RUN /tmp/build-zfs.sh
 

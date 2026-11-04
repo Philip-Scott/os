@@ -106,6 +106,57 @@ jobs:
             org.opencontainers.image.description=${{ env.MY_IMAGE_DESC }}
             org.opencontainers.image.title=${{ env.MY_IMAGE_NAME }}
 
+      # Compiling the ZFS kmod is slow, so cache the resulting RPMs. They only
+      # depend on the base image kernel, ZFS_VERSION and build-zfs.sh.
+      - name: Compute ZFS cache key
+        id: zfs-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="docker://ghcr.io/ublue-os/${{ matrix.source_image }}:stable"
+          INSPECT="$(skopeo inspect --no-tags "${BASE}")"
+          KERNEL="$(jq -r '.Labels["ostree.linux"] // empty' <<< "${INSPECT}")"
+          # Fall back to the image digest so a missing label never reuses stale RPMs.
+          KERNEL="${KERNEL:-$(jq -r '.Digest' <<< "${INSPECT}" | tr ':' '-')}"
+          ZFS_VERSION="$(sed -n 's/^ARG ZFS_VERSION="\(.*\)"/\1/p' Containerfile)"
+          echo "Base kernel: ${KERNEL}, ZFS: ${ZFS_VERSION}"
+          # Pin both builds below to the inspected image so the kernel matches the key.
+          echo "source_tag=stable@$(jq -r '.Digest' <<< "${INSPECT}")" >> "$GITHUB_OUTPUT"
+          echo "key=zfs-rpms-${{ matrix.source_image }}-${KERNEL}-${ZFS_VERSION}-${{ hashFiles('build-zfs.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached ZFS RPMs
+        id: zfs-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: zfs-rpms/*.rpm
+          key: ${{ steps.zfs-key.outputs.key }}
+
+      # On a cache miss, build only the zfs-builder stage and extract its RPMs so
+      # they can be cached and reused by the image build below.
+      - name: Build ZFS RPMs
+        if: steps.zfs-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          buildah build \
+            --target zfs-builder \
+            --build-arg SOURCE_IMAGE=${{ matrix.source_image }} \
+            --build-arg SOURCE_TAG=${{ steps.zfs-key.outputs.source_tag }} \
+            --tag localhost/zfs-builder \
+            -f Containerfile .
+          CTR="$(podman create localhost/zfs-builder)"
+          podman cp "${CTR}:/var/cache/zfs-rpms/." zfs-rpms/
+          podman rm "${CTR}"
+          podman rmi localhost/zfs-builder
+          ls -l zfs-rpms/
+
+      - name: Save ZFS RPMs to cache
+        if: steps.zfs-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: zfs-rpms/*.rpm
+          key: ${{ steps.zfs-key.outputs.key }}
+
       # Build image using Buildah action
       - name: Build Image
         id: build_image
@@ -120,6 +171,7 @@ jobs:
             ${{ steps.generate-tags.outputs.alias_tags }}
           build-args: |
             SOURCE_IMAGE=${{ matrix.source_image }}
+            SOURCE_TAG=${{ steps.zfs-key.outputs.source_tag }}
             IMAGE_VARIANT=${{ matrix.name }}
           labels: ${{ steps.meta.outputs.labels }}
           oci: false
