@@ -21,6 +21,18 @@ if [ ! -d "/usr/src/kernels/${KERNEL}" ]; then
     exit 1
 fi
 
+# Reuse cached RPMs when they were built for this exact kernel and ZFS release.
+PREBUILT=/tmp/zfs-prebuilt
+if compgen -G "${PREBUILT}/zfs-${ZFS_VERSION}-*.rpm" > /dev/null &&
+    compgen -G "${PREBUILT}/kmod-zfs-*.rpm" > /dev/null &&
+    grep -qF "/lib/modules/${KERNEL}/" <<< "$(rpm -qlp "${PREBUILT}"/kmod-zfs-*.rpm)"; then
+    echo "Reusing prebuilt ZFS ${ZFS_VERSION} RPMs for ${KERNEL}"
+    mkdir -p /var/cache/zfs-rpms
+    cp "${PREBUILT}"/*.rpm /var/cache/zfs-rpms/
+    ls -l /var/cache/zfs-rpms/
+    exit 0
+fi
+
 dnf install -y \
     autoconf automake libtool gcc make rpm-build \
     libtirpc-devel libblkid-devel libuuid-devel libudev-devel openssl-devel \

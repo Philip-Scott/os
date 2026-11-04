@@ -31,6 +31,11 @@ OGC kernel. The `zfs-builder` stage in the `Containerfile` therefore compiles
 the module from the signed OpenZFS release tarball against the exact kernel in
 the base image, and only the resulting RPMs are copied into the final image.
 
+Compiling the module is slow, so CI caches the RPMs with `actions/cache`. The
+cache key includes the base image kernel (`ostree.linux` label), `ZFS_VERSION`
+and `build-zfs.sh`. It is restored into `zfs-rpms/`, and `build-zfs.sh` reuses
+the RPMs only when they match the image kernel; otherwise it rebuilds them.
+
 `ZFS_VERSION` in the `Containerfile` has to stay compatible with the base image
 kernel. The build fails with an explicit message when the kernel moves past the
 `Linux-Maximum` declared by that OpenZFS release; bump `ZFS_VERSION` to a
