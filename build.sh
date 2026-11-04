@@ -16,11 +16,11 @@ if [ "${IMAGE_VARIANT}" != "nvidia" ]; then
     PACKAGES+=(rocm-smi rocm-hip rocm-opencl rocminfo)
 fi
 
-rpm-ostree install "${PACKAGES[@]}"
+dnf5 install -y "${PACKAGES[@]}"
 
 # ZFS: kmod plus userland tools built against this image's kernel by the
 # zfs-builder stage. Pools are imported and mounted manually, not at boot.
-rpm-ostree install /tmp/zfs-rpms/*.rpm
+dnf5 install -y /tmp/zfs-rpms/*.rpm
 
 KERNEL_VERSION="$(rpm -q kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}')"
 depmod -a "${KERNEL_VERSION}"
@@ -34,3 +34,7 @@ ls -lar
 # kpackagetool6 --type=KWin/Script -i ./kwin-scripts/dynamic-workspaces/ --global
 # kpackagetool6 --type=KWin/Script -i ./kwin-scripts/virtual-desktops-only-on-primary/ --global
 systemctl enable podman.socket
+
+dnf5 clean all
+rm -rf /tmp/zfs-rpms /tmp/kwin-scripts
+rm -f /tmp/build.sh
