@@ -28,6 +28,10 @@ depmod -a "${KERNEL_VERSION}"
 # Load the module at boot so pools can be imported without manual modprobe.
 echo "zfs" > /etc/modules-load.d/zfs.conf
 
+# Let the logged-in user access Keychron keyboards (vendor 3434) over hidraw,
+# e.g. for VIA/Keychron Launcher in the browser.
+echo 'SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", TAG+="uaccess"' > /etc/udev/rules.d/50-keychron.rules
+
 ls -lar
 
 # Install kwin-scripts for desktop tweaks

@@ -53,6 +53,14 @@ restic -r /<pool>/<dataset>/<repo> snapshots
 > The module is built locally and is **not** signed with an enrolled MOK, so it
 > will not load while Secure Boot is enabled.
 
+# Keychron keyboards
+
+`build.sh` installs `/etc/udev/rules.d/50-keychron.rules`, which grants the
+logged-in user access to `hidraw` devices from vendor `3434` (Keychron) so
+tools like VIA / Keychron Launcher can configure the keyboard. Reboot after
+updating to the new image for it to take effect. Check a keyboard's vendor ID
+with `lsusb | grep -i keychron` (the `ID 3434:xxxx` part).
+
 # Purpose
 
 This repository is meant to be a template for building your own custom Universal Blue image. This template is the recommended way to make customizations to any image published by the Universal Blue Project:
