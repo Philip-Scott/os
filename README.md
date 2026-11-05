@@ -55,7 +55,8 @@ restic -r /<pool>/<dataset>/<repo> snapshots
 
 # Keychron keyboards
 
-`build.sh` installs `/etc/udev/rules.d/50-keychron.rules`, which grants the
+Files in `root/` are copied onto the image filesystem as-is (`root/etc/...`
+becomes `/etc/...`). `root/etc/udev/rules.d/50-keychron.rules` grants the
 logged-in user access to `hidraw` devices from vendor `3434` (Keychron) so
 tools like VIA / Keychron Launcher can configure the keyboard. Reboot after
 updating to the new image for it to take effect. Check a keyboard's vendor ID
