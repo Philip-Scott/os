@@ -20,6 +20,17 @@ rpm-ostree rebase ostree-unverified-registry:ghcr.io/philip-scott/os
 rpm-ostree rebase ostree-unverified-registry:ghcr.io/philip-scott/os-nvidia
 ```
 
+# Image layers
+
+Everything `build.sh` installs lands in a single Containerfile `RUN` layer,
+which would change on every build and force a full re-download. The workflow
+therefore rechunks the final image with `rpm-ostree compose build-chunked-oci`
+(as in [ublue-os/image-template](https://github.com/ublue-os/image-template)),
+splitting it into up to 127 per-package layers. `--previous-build` points at the
+published `:latest` image to keep the layer plan stable, so an update only
+downloads layers whose packages changed. The first update after rechunking was
+introduced downloads the whole image once.
+
 # ZFS
 
 This image bundles OpenZFS so ZFS pools (for example a drive holding a
