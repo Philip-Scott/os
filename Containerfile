@@ -26,6 +26,9 @@ FROM ghcr.io/ublue-os/${SOURCE_IMAGE}:${SOURCE_TAG}
 
 ARG IMAGE_VARIANT
 
+# Files under root/ are copied as-is onto the image filesystem.
+COPY root/ /
+
 COPY build.sh /tmp/build.sh
 COPY kwin-scripts /tmp/kwin-scripts
 COPY --from=zfs-builder /var/cache/zfs-rpms /tmp/zfs-rpms
