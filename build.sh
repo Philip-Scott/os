@@ -30,14 +30,6 @@ echo "zfs" > /etc/modules-load.d/zfs.conf
 
 ls -lar
 
-# rocm-hip hard-requires hipcc -> rocm-device-libs -> rocm-llvm-static, which
-# ships ~2.3GB of static LLVM archives (/usr/lib64/rocm/llvm/lib/*.a). They are
-# only used to statically link against LLVM, never at runtime, so drop them.
-# Done after the last dnf5 transaction so dnf5 doesn't trip over the broken dep.
-if rpm -q rocm-llvm-static > /dev/null; then
-    rpm -e --nodeps rocm-llvm-static
-fi
-
 # Install kwin-scripts for desktop tweaks
 # kpackagetool6 --type=KWin/Script -i ./kwin-scripts/dynamic-workspaces/ --global
 # kpackagetool6 --type=KWin/Script -i ./kwin-scripts/virtual-desktops-only-on-primary/ --global

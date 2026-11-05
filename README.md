@@ -31,10 +31,6 @@ published `:latest` image to keep the layer plan stable, so an update only
 downloads layers whose packages changed. The first update after rechunking was
 introduced downloads the whole image once.
 
-`rocm-hip` hard-depends (via `hipcc`) on `rocm-llvm-static`, ~2.3GB of static
-LLVM archives that are never used at runtime; `build.sh` removes it with
-`rpm -e --nodeps`.
-
 # ZFS
 
 This image bundles OpenZFS so ZFS pools (for example a drive holding a
