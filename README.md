@@ -33,39 +33,16 @@ introduced downloads the whole image once.
 
 # ZFS
 
-This image bundles OpenZFS so ZFS pools (for example a drive holding a
-[Restic](https://restic.net/) repository) can be imported and mounted.
+ZFS support is currently disabled. Bazzite `stable` ships Linux 7.3, and no
+OpenZFS release supports that kernel yet (OpenZFS 2.4.4 supports up to 7.2).
 
-Universal Blue only publishes prebuilt ZFS kmods for the `coreos-stable`,
-`coreos-testing`, `longterm` and `centos` kernel flavors, and Bazzite ships the
-OGC kernel. The `zfs-builder` stage in the `Containerfile` therefore compiles
-the module from the signed OpenZFS release tarball against the exact kernel in
-the base image, and only the resulting RPMs are copied into the final image.
-
-Compiling the module is slow, so CI caches the RPMs with `actions/cache`. The
-cache key includes the base image kernel (`ostree.linux` label), `ZFS_VERSION`
-and `build-zfs.sh`. It is restored into `zfs-rpms/`, and `build-zfs.sh` reuses
-the RPMs only when they match the image kernel; otherwise it rebuilds them.
-
-`ZFS_VERSION` in the `Containerfile` has to stay compatible with the base image
-kernel. CI uses `stable` when its kernel is supported; otherwise it selects the
-newest versioned stable Bazzite tag with a supported kernel. This can hold back
-base image security updates, and CI emits a warning when it happens. Bump
-`ZFS_VERSION` when a signed OpenZFS release supports the newer kernel. Local
-builds default to `stable` and fail if its kernel is unsupported; pass a
-compatible `SOURCE_TAG` build argument until then.
-
-The module is autoloaded at boot and `zfs-import-cache`, `zfs-mount` and
-`zfs-zed` are enabled, so previously imported pools come back automatically:
-
-```bash
-sudo zpool import <pool>
-restic -r /<pool>/<dataset>/<repo> snapshots
-```
-
-> [!NOTE]
-> The module is built locally and is **not** signed with an enrolled MOK, so it
-> will not load while Secure Boot is enabled.
+Bazzite ships the OGC kernel, for which Universal Blue publishes no prebuilt ZFS
+kmod, so the module has to be built from source. `build-zfs.sh` is kept for
+that purpose: it builds the kmod and userland RPMs from the signed OpenZFS
+release tarball against the base image kernel, and fails with an explicit
+message if the kernel is newer than the release's `Linux-Maximum`. Re-enabling
+ZFS requires adding back a `zfs-builder` stage that runs it, installing the
+resulting RPMs in `build.sh`, and loading the `zfs` module at boot.
 
 # Keychron keyboards
 

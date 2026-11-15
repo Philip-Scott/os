@@ -18,16 +18,6 @@ fi
 
 dnf5 install -y "${PACKAGES[@]}"
 
-# ZFS: kmod plus userland tools built against this image's kernel by the
-# zfs-builder stage. Pools are imported and mounted manually, not at boot.
-dnf5 install -y /tmp/zfs-rpms/*.rpm
-
-KERNEL_VERSION="$(rpm -q kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}')"
-depmod -a "${KERNEL_VERSION}"
-
-# Load the module at boot so pools can be imported without manual modprobe.
-echo "zfs" > /etc/modules-load.d/zfs.conf
-
 ls -lar
 
 # Install kwin-scripts for desktop tweaks
@@ -36,5 +26,5 @@ ls -lar
 systemctl enable podman.socket
 
 dnf5 clean all
-rm -rf /tmp/zfs-rpms /tmp/kwin-scripts
+rm -rf /tmp/kwin-scripts
 rm -f /tmp/build.sh

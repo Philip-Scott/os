@@ -5,23 +5,6 @@ ARG SOURCE_TAG="stable"
 # "default" targets the AMD/Intel image, "nvidia" targets bazzite-nvidia-open.
 ARG IMAGE_VARIANT="default"
 
-# OpenZFS release used to build the kernel module. It must support the kernel
-# shipped by the base image (see Linux-Maximum in the OpenZFS META file).
-ARG ZFS_VERSION="2.4.4"
-
-# Throwaway stage that compiles the ZFS kmod against the base image kernel, so
-# that the build tooling never reaches the final image.
-FROM ghcr.io/ublue-os/${SOURCE_IMAGE}:${SOURCE_TAG} AS zfs-builder
-
-ARG ZFS_VERSION
-
-COPY build-zfs.sh /tmp/build-zfs.sh
-# Previously built RPMs (restored from the CI cache). Reused by build-zfs.sh
-# when they match the kernel and ZFS_VERSION, otherwise ignored.
-COPY zfs-rpms /tmp/zfs-prebuilt
-
-RUN /tmp/build-zfs.sh
-
 FROM ghcr.io/ublue-os/${SOURCE_IMAGE}:${SOURCE_TAG}
 
 ARG IMAGE_VARIANT
@@ -31,7 +14,6 @@ COPY root/ /
 
 COPY build.sh /tmp/build.sh
 COPY kwin-scripts /tmp/kwin-scripts
-COPY --from=zfs-builder /var/cache/zfs-rpms /tmp/zfs-rpms
 
 RUN mkdir -p /var/lib/alternatives && \
     cd /tmp/ && \
