@@ -48,9 +48,12 @@ and `build-zfs.sh`. It is restored into `zfs-rpms/`, and `build-zfs.sh` reuses
 the RPMs only when they match the image kernel; otherwise it rebuilds them.
 
 `ZFS_VERSION` in the `Containerfile` has to stay compatible with the base image
-kernel. The build fails with an explicit message when the kernel moves past the
-`Linux-Maximum` declared by that OpenZFS release; bump `ZFS_VERSION` to a
-release that supports the new kernel.
+kernel. The default image is temporarily pinned to Bazzite `45.20261105` (Linux
+7.2), because OpenZFS 2.4.4 does not support the Linux 7.3 kernel in newer
+Bazzite releases. This also holds back base image security updates. Once a
+signed OpenZFS release supports the newer kernel, bump `ZFS_VERSION` and restore
+the default `SOURCE_TAG` in the `Containerfile` and workflow to `stable`. The
+Nvidia image continues to use `stable`.
 
 The module is autoloaded at boot and `zfs-import-cache`, `zfs-mount` and
 `zfs-zed` are enabled, so previously imported pools come back automatically:

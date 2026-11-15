@@ -1,5 +1,5 @@
 ARG SOURCE_IMAGE="bazzite"
-ARG SOURCE_TAG="stable"
+ARG SOURCE_TAG="45.20261105"
 
 # Selects the hardware specific customizations applied by build.sh.
 # "default" targets the AMD/Intel image, "nvidia" targets bazzite-nvidia-open.

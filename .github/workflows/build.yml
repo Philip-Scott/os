@@ -29,11 +29,13 @@ jobs:
           - name: default
             image_suffix: ""
             source_image: bazzite
+            source_tag: "45.20261105"
             image_desc: "My Customized Universal Blue Image"
           # Nvidia image, based on bazzite-nvidia-open
           - name: nvidia
             image_suffix: "-nvidia"
             source_image: bazzite-nvidia
+            source_tag: stable
             image_desc: "My Customized Universal Blue Image (Nvidia)"
 
     permissions:
@@ -113,7 +115,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BASE="docker://ghcr.io/ublue-os/${{ matrix.source_image }}:stable"
+          BASE="docker://ghcr.io/ublue-os/${{ matrix.source_image }}:${{ matrix.source_tag }}"
           INSPECT="$(skopeo inspect --no-tags "${BASE}")"
           KERNEL="$(jq -r '.Labels["ostree.linux"] // empty' <<< "${INSPECT}")"
           # Fall back to the image digest so a missing label never reuses stale RPMs.
@@ -121,7 +123,7 @@ jobs:
           ZFS_VERSION="$(sed -n 's/^ARG ZFS_VERSION="\(.*\)"/\1/p' Containerfile)"
           echo "Base kernel: ${KERNEL}, ZFS: ${ZFS_VERSION}"
           # Pin both builds below to the inspected image so the kernel matches the key.
-          echo "source_tag=stable@$(jq -r '.Digest' <<< "${INSPECT}")" >> "$GITHUB_OUTPUT"
+          echo "source_tag=${{ matrix.source_tag }}@$(jq -r '.Digest' <<< "${INSPECT}")" >> "$GITHUB_OUTPUT"
           echo "key=zfs-rpms-${{ matrix.source_image }}-${KERNEL}-${ZFS_VERSION}-${{ hashFiles('build-zfs.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Restore cached ZFS RPMs
