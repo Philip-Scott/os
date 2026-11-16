@@ -90,7 +90,8 @@ desktop battery widget. Its source is vendored in
 v0.1.3 (commit `43c324e`, GPL-2.0-only), so the build never fetches code from
 that repository. Two local changes sit on top of v0.1.3: [upstream PR 6](https://github.com/csutcliff/keychron-battery-dkms/pull/6)
 (responses are read through `raw_event` instead of a private URB), and
-Link-KM support, whose vendor channel is on interface 1 instead of 4 and
+Link-KM support, whose vendor channel is on interface 1 instead of 4,
+which takes queries only on its interrupt OUT endpoint, and
 which reports as "Keychron Link-KM" since it does not answer the paired-mouse
 query. DKMS cannot rebuild modules on an image based system, so the
 `keychron-battery-builder` stage in the `Containerfile` compiles it against the

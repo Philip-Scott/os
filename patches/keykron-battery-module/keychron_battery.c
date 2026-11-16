@@ -219,8 +219,17 @@ static int keychron_query_once(struct keychron_device *kdev, u8 *buf,
 	kdev->resp_len = 0;
 	atomic_set_release(&kdev->waiting_response, 1);
 
-	ret = hid_hw_raw_request(kdev->hdev, report_id, buf, len,
-				 HID_OUTPUT_REPORT, HID_REQ_SET_REPORT);
+	/*
+	 * The Link-KM ignores SET_REPORT on the control pipe and only answers
+	 * on its interrupt OUT endpoint, so send the way hidraw writes do:
+	 * interrupt OUT when there is one, the control pipe otherwise.
+	 */
+	ret = -ENOSYS;
+	if (kdev->hdev->product == USB_DEVICE_ID_KEYCHRON_LINK_KM)
+		ret = hid_hw_output_report(kdev->hdev, buf, len);
+	if (ret == -ENOSYS)
+		ret = hid_hw_raw_request(kdev->hdev, report_id, buf, len,
+					 HID_OUTPUT_REPORT, HID_REQ_SET_REPORT);
 	if (ret < 0)
 		goto out;
 
