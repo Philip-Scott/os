@@ -82,12 +82,17 @@ with `lsusb | grep -i keychron` (the `ID 3434:xxxx` part).
 ## Mouse battery
 
 The image includes the `keychron_battery` kernel module, which reports the
-battery level of Keychron M5 / M6 8K mice (wired or through the Ultra-Link 8K
-receiver) to UPower and the desktop battery widget. Its source is vendored in
+battery level of Keychron M5 / M6 8K mice (wired, through the Ultra-Link 8K
+receiver, or through the Link-KM receiver `3434:d026`) to UPower and the
+desktop battery widget. Its source is vendored in
 `patches/keykron-battery-module` from
 [keychron-battery-dkms](https://github.com/csutcliff/keychron-battery-dkms)
 v0.1.3 (commit `43c324e`, GPL-2.0-only), so the build never fetches code from
-that repository. DKMS cannot rebuild modules on an image based system, so the
+that repository. Two local changes sit on top of v0.1.3: [upstream PR 6](https://github.com/csutcliff/keychron-battery-dkms/pull/6)
+(responses are read through `raw_event` instead of a private URB), and
+Link-KM support, whose vendor channel is on interface 1 instead of 4 and
+which reports as "Keychron Link-KM" since it does not answer the paired-mouse
+query. DKMS cannot rebuild modules on an image based system, so the
 `keychron-battery-builder` stage in the `Containerfile` compiles it against the
 base image kernel, and `build.sh` installs it under
 `/usr/lib/modules/<kernel>/extra/`. The module autoloads when a supported device
@@ -98,7 +103,8 @@ cat /sys/class/power_supply/keychron_mouse/capacity
 ```
 
 To update, review the upstream changes and copy `keychron_battery.c` and
-`Makefile` from the new release into `patches/keykron-battery-module`. Like ZFS, the module is unsigned and will not
+`Makefile` from the new release into `patches/keykron-battery-module`, then
+reapply the Link-KM changes (and upstream PR 6 if it has not been released yet). Like ZFS, the module is unsigned and will not
 load while Secure Boot is enabled.
 
 # Purpose
