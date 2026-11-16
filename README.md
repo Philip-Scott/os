@@ -79,6 +79,27 @@ tools like VIA / Keychron Launcher can configure the keyboard. Reboot after
 updating to the new image for it to take effect. Check a keyboard's vendor ID
 with `lsusb | grep -i keychron` (the `ID 3434:xxxx` part).
 
+## Mouse battery
+
+The image includes the `keychron_battery` kernel module from
+[keychron-battery-dkms](https://github.com/csutcliff/keychron-battery-dkms),
+which reports the battery level of Keychron M5 / M6 8K mice (wired or through
+the Ultra-Link 8K receiver) to UPower and the desktop battery widget. DKMS
+cannot rebuild modules on an image based system, so the
+`keychron-battery-builder` stage in the `Containerfile` compiles the pinned
+`KEYCHRON_BATTERY_VERSION` (verified against `KEYCHRON_BATTERY_SHA256`) against
+the base image kernel, and `build.sh` installs it under
+`/usr/lib/modules/<kernel>/extra/`. The module autoloads when a supported device
+is connected:
+
+```bash
+cat /sys/class/power_supply/keychron_mouse/capacity
+```
+
+To update, bump both build args to the new release and the `sha256sums` value
+from its upstream `PKGBUILD`. Like ZFS, the module is unsigned and will not
+load while Secure Boot is enabled.
+
 # Purpose
 
 This repository is meant to be a template for building your own custom Universal Blue image. This template is the recommended way to make customizations to any image published by the Universal Blue Project:

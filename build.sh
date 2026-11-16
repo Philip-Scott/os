@@ -33,6 +33,14 @@ if [ "${ENABLE_ZFS}" = "true" ]; then
     echo "zfs" > /etc/modules-load.d/zfs.conf
 fi
 
+# Keychron mouse battery reporting, built by the keychron-battery-builder
+# stage. The module autoloads through its HID device table when a supported
+# mouse or receiver is connected.
+KERNEL_VERSION="$(rpm -q kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}')"
+install -Dm644 /tmp/keychron-battery/keychron_battery.ko \
+    "/usr/lib/modules/${KERNEL_VERSION}/extra/keychron-battery/keychron_battery.ko"
+depmod -a "${KERNEL_VERSION}"
+
 ls -lar
 
 # Install kwin-scripts for desktop tweaks
@@ -41,5 +49,5 @@ ls -lar
 systemctl enable podman.socket
 
 dnf5 clean all
-rm -rf /tmp/zfs-rpms /tmp/kwin-scripts
+rm -rf /tmp/zfs-rpms /tmp/keychron-battery /tmp/kwin-scripts
 rm -f /tmp/build.sh
