@@ -1,1 +1,4 @@
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", TAG+="uaccess"
+# Placeholder mouse that keychron_battery parents the Link-KM battery to, so
+# UPower shows it as a mouse. It never sends events; keep it out of libinput.
+SUBSYSTEM=="input", ATTRS{id/bustype}=="0006", ATTRS{id/vendor}=="3434", ENV{LIBINPUT_IGNORE_DEVICE}="1"

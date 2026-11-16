@@ -23,7 +23,9 @@
  */
 
 #include <linux/module.h>
+#include <linux/device.h>
 #include <linux/hid.h>
+#include <linux/input.h>
 #include <linux/usb.h>
 #include <linux/power_supply.h>
 #include <linux/workqueue.h>
@@ -77,6 +79,8 @@ struct keychron_device {
 	struct hid_device *hdev;
 	struct power_supply *battery;
 	struct power_supply_desc battery_desc;
+	struct device *battery_parent;	/* Link-KM only, see keychron_register_battery() */
+	struct input_dev *battery_input;
 	struct delayed_work work;
 	struct completion response_received;
 	int battery_capacity;
@@ -100,9 +104,9 @@ static const struct hid_device_id keychron_devices[] = {
 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYCHRON, USB_DEVICE_ID_KEYCHRON_M6),
 	  .driver_data = (kernel_ulong_t)"Keychron M6 8K" },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYCHRON, USB_DEVICE_ID_KEYCHRON_RECV) },
-	/* Does not answer the paired-product query, so the model stays generic */
+	/* Does not answer the paired-product query, so the model is fixed */
 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYCHRON, USB_DEVICE_ID_KEYCHRON_LINK_KM),
-	  .driver_data = (kernel_ulong_t)"Keychron Link-KM" },
+	  .driver_data = (kernel_ulong_t)"Keychron M6" },
 	{ }
 };
 MODULE_DEVICE_TABLE(hid, keychron_devices);
@@ -388,9 +392,79 @@ static int keychron_detect_model(struct keychron_device *kdev)
 	return 0;
 }
 
+static void keychron_unregister_battery_parent(struct keychron_device *kdev)
+{
+	if (kdev->battery_input) {
+		input_unregister_device(kdev->battery_input);
+		kdev->battery_input = NULL;
+	}
+	if (kdev->battery_parent) {
+		root_device_unregister(kdev->battery_parent);
+		kdev->battery_parent = NULL;
+	}
+}
+
+/*
+ * UPower picks a device battery's type, and sometimes its model, from the
+ * input devices on the same USB device. The Link-KM has a joystick on the
+ * battery's interface, so the mouse showed up as a game controller named
+ * after the receiver. Give its battery a parent of its own, outside the
+ * USB device, whose only input is an idle placeholder mouse carrying the
+ * model name. The udev rules shipped with the image hide it from libinput.
+ */
+static int keychron_register_battery_parent(struct keychron_device *kdev)
+{
+	struct input_dev *input;
+	int ret;
+
+	kdev->battery_parent = root_device_register("keychron_battery");
+	if (IS_ERR(kdev->battery_parent)) {
+		ret = PTR_ERR(kdev->battery_parent);
+		kdev->battery_parent = NULL;
+		return ret;
+	}
+
+	input = input_allocate_device();
+	if (!input) {
+		keychron_unregister_battery_parent(kdev);
+		return -ENOMEM;
+	}
+
+	input->name = kdev->model_name;
+	input->id.bustype = BUS_VIRTUAL;
+	input->id.vendor = USB_VENDOR_ID_KEYCHRON;
+	input->id.product = kdev->hdev->product;
+	input->dev.parent = kdev->battery_parent;
+	input_set_capability(input, EV_REL, REL_X);
+	input_set_capability(input, EV_REL, REL_Y);
+	input_set_capability(input, EV_KEY, BTN_LEFT);
+	input_set_capability(input, EV_KEY, BTN_RIGHT);
+
+	ret = input_register_device(input);
+	if (ret) {
+		input_free_device(input);
+		keychron_unregister_battery_parent(kdev);
+		return ret;
+	}
+	kdev->battery_input = input;
+
+	return 0;
+}
+
 static int keychron_register_battery(struct keychron_device *kdev)
 {
 	struct power_supply_config psy_cfg = {};
+	struct device *parent = &kdev->hdev->dev;
+	int ret;
+
+	if (kdev->hdev->product == USB_DEVICE_ID_KEYCHRON_LINK_KM) {
+		ret = keychron_register_battery_parent(kdev);
+		if (ret)
+			hid_warn(kdev->hdev,
+				 "failed to set up battery parent: %d\n", ret);
+		else
+			parent = kdev->battery_parent;
+	}
 
 	kdev->battery_desc.name = "keychron_mouse";
 	kdev->battery_desc.type = POWER_SUPPLY_TYPE_BATTERY;
@@ -400,13 +474,14 @@ static int keychron_register_battery(struct keychron_device *kdev)
 
 	psy_cfg.drv_data = kdev;
 
-	kdev->battery = power_supply_register(&kdev->hdev->dev,
-					      &kdev->battery_desc, &psy_cfg);
+	kdev->battery = power_supply_register(parent, &kdev->battery_desc,
+					      &psy_cfg);
 	if (IS_ERR(kdev->battery)) {
-		int ret = PTR_ERR(kdev->battery);
+		ret = PTR_ERR(kdev->battery);
 
 		hid_err(kdev->hdev, "failed to register power supply: %d\n", ret);
 		kdev->battery = NULL;
+		keychron_unregister_battery_parent(kdev);
 		return ret;
 	}
 
@@ -418,6 +493,7 @@ static void keychron_release_battery(struct keychron_device *kdev)
 {
 	power_supply_unregister(kdev->battery);
 	kdev->battery = NULL;
+	keychron_unregister_battery_parent(kdev);
 	keychron_battery_owner = NULL;
 }
 

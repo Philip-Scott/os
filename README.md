@@ -92,8 +92,11 @@ that repository. Two local changes sit on top of v0.1.3: [upstream PR 6](https:/
 (responses are read through `raw_event` instead of a private URB), and
 Link-KM support, whose vendor channel is on interface 1 instead of 4,
 which takes queries only on its interrupt OUT endpoint, and
-which reports as "Keychron Link-KM" since it does not answer the paired-mouse
-query. DKMS cannot rebuild modules on an image based system, so the
+which reports as "Keychron M6" since it does not answer the paired-mouse
+query. Because the Link-KM carries a joystick on the same interface, UPower
+would show its battery as a game controller named after the receiver; the
+module instead parents that battery to a virtual `keychron_battery` device with
+an idle placeholder mouse, which `50-keychron.rules` hides from libinput. DKMS cannot rebuild modules on an image based system, so the
 `keychron-battery-builder` stage in the `Containerfile` compiles it against the
 base image kernel, and `build.sh` installs it under
 `/usr/lib/modules/<kernel>/extra/`. The module autoloads when a supported device
