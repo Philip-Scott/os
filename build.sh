@@ -41,6 +41,21 @@ install -Dm644 /tmp/keychron-battery/keychron_battery.ko \
     "/usr/lib/modules/${KERNEL_VERSION}/extra/keychron-battery/keychron_battery.ko"
 depmod -a "${KERNEL_VERSION}"
 
+# Keep the HDA codec powered while idle (see /etc/modprobe.d/audio-no-powersave.conf).
+# tuned's audio plugin rewrites snd_hda_intel power_save at runtime, overriding
+# the modprobe option, so disable it in every tuned profile that enables it.
+TUNED_AUDIO_PROFILES="$(grep -rlx --include=tuned.conf '\[audio\]' /usr/lib/tuned || true)"
+for profile in ${TUNED_AUDIO_PROFILES}; do
+    awk '/^\[/ { section = $0 }
+         section == "[audio]" && /^[[:space:]]*timeout[[:space:]]*=/ { $0 = "timeout=0" }
+         { print }' "${profile}" > "${profile}.tmp"
+    mv "${profile}.tmp" "${profile}"
+done
+if grep -rA5 --include=tuned.conf '^\[audio\]' /usr/lib/tuned | grep -E 'timeout[[:space:]]*=' | grep -vE 'timeout=0$'; then
+    echo "tuned audio power saving is still enabled" >&2
+    exit 1
+fi
+
 ls -lar
 
 # Install kwin-scripts for desktop tweaks
