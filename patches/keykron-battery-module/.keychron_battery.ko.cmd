@@ -1,1 +1,0 @@
-savedcmd_keychron_battery.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1 --force-group-allocation  -T /usr/src/kernels/7.3.3-300.fc45.x86_64/scripts/module.lds -o keychron_battery.ko keychron_battery.o keychron_battery.mod.o .module-common.o

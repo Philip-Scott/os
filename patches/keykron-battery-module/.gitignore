@@ -1,0 +1,6 @@
+# Kernel build output; only source is vendored here.
+*
+!.gitignore
+!Makefile
+!README.md
+!keychron_battery.c

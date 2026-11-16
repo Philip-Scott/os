@@ -1,1 +1,0 @@
-./keychron_battery.o
