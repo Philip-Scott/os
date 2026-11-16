@@ -13,11 +13,6 @@ ARG ENABLE_ZFS="false"
 # shipped by the base image (see Linux-Maximum in the OpenZFS META file).
 ARG ZFS_VERSION="2.4.4"
 
-# keychron-battery-dkms release providing battery reporting for Keychron mice,
-# and the sha256 of its GitHub source tarball (also listed in upstream PKGBUILD).
-ARG KEYCHRON_BATTERY_VERSION="0.1.3"
-ARG KEYCHRON_BATTERY_SHA256="7656e36d383a7082272edf3de78b0aadc975806d067662e5a24f00160cd4798d"
-
 # Throwaway stage that compiles the ZFS kmod against the base image kernel, so
 # that the build tooling never reaches the final image.
 FROM ghcr.io/ublue-os/${SOURCE_IMAGE}:${SOURCE_TAG} AS zfs-builder
@@ -37,14 +32,11 @@ RUN if [ "${ENABLE_ZFS}" = "true" ]; then /tmp/build-zfs.sh; else mkdir -p /var/
 # image kernel. DKMS cannot rebuild modules on an image based system.
 FROM ghcr.io/ublue-os/${SOURCE_IMAGE}:${SOURCE_TAG} AS keychron-battery-builder
 
-ARG KEYCHRON_BATTERY_VERSION
-ARG KEYCHRON_BATTERY_SHA256
-
 COPY build-keychron-battery.sh /tmp/build-keychron-battery.sh
+# Vendored module source, see patches/keykron-battery-module.
+COPY patches/keykron-battery-module /tmp/keychron-battery-src
 
-RUN KEYCHRON_BATTERY_VERSION="${KEYCHRON_BATTERY_VERSION}" \
-    KEYCHRON_BATTERY_SHA256="${KEYCHRON_BATTERY_SHA256}" \
-    /tmp/build-keychron-battery.sh
+RUN /tmp/build-keychron-battery.sh
 
 FROM ghcr.io/ublue-os/${SOURCE_IMAGE}:${SOURCE_TAG}
 
