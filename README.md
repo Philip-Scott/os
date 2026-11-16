@@ -54,12 +54,9 @@ and `build-zfs.sh`. It is restored into `zfs-rpms/`, and `build-zfs.sh` reuses
 the RPMs only when they match the image kernel; otherwise it rebuilds them.
 
 `ZFS_VERSION` in the `Containerfile` has to stay compatible with the base image
-kernel. CI uses `stable` when its kernel is supported; otherwise it selects the
-newest versioned stable Bazzite tag with a supported kernel. This can hold back
-base image security updates, and CI emits a warning when it happens. Bump
-`ZFS_VERSION` when a signed OpenZFS release supports the newer kernel. Local
-builds default to `stable` and fail if its kernel is unsupported; pass a
-compatible `SOURCE_TAG` build argument until then.
+kernel. The build fails with an explicit message when the kernel moves past the
+`Linux-Maximum` declared by that OpenZFS release; bump `ZFS_VERSION` to a
+release that supports the new kernel.
 
 The module is autoloaded at boot and `zfs-import-cache`, `zfs-mount` and
 `zfs-zed` are enabled, so previously imported pools come back automatically:

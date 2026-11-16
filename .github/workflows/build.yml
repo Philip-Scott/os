@@ -120,40 +120,15 @@ jobs:
             echo "source_tag=stable" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          ZFS_VERSION="$(sed -n 's/^ARG ZFS_VERSION="\(.*\)"/\1/p' Containerfile)"
-          META="$(curl -fsSL "https://raw.githubusercontent.com/openzfs/zfs/zfs-${ZFS_VERSION}/META")"
-          LINUX_MAXIMUM="$(awk -F: '/^Linux-Maximum:/ { gsub(/[[:space:]]/, "", $2); print $2 }' <<< "${META}")"
-          [[ "${LINUX_MAXIMUM}" =~ ^[0-9]+\.[0-9]+$ ]]
-
-          IMAGE="ghcr.io/ublue-os/${{ matrix.source_image }}"
-          TAG=stable
-          INSPECT="$(skopeo inspect --no-tags "docker://${IMAGE}:${TAG}")"
+          BASE="docker://ghcr.io/ublue-os/${{ matrix.source_image }}:stable"
+          INSPECT="$(skopeo inspect --no-tags "${BASE}")"
           KERNEL="$(jq -r '.Labels["ostree.linux"] // empty' <<< "${INSPECT}")"
-          [[ "${KERNEL}" =~ ^[0-9]+\.[0-9]+ ]]
-          KERNEL_MM="${BASH_REMATCH[0]}"
-          if [[ "$(printf '%s\n' "${LINUX_MAXIMUM}" "${KERNEL_MM}" | sort -V | tail -n1)" != "${LINUX_MAXIMUM}" ]]; then
-            TAGS="$(skopeo list-tags "docker://${IMAGE}")"
-            mapfile -t CANDIDATES < <(jq -r '.Tags[] | select(test("^stable-[0-9]+\\.[0-9]{8}$"))' <<< "${TAGS}" | sort -Vr)
-            TAG=""
-            for candidate in "${CANDIDATES[@]}"; do
-              INSPECT="$(skopeo inspect --no-tags "docker://${IMAGE}:${candidate}")"
-              KERNEL="$(jq -r '.Labels["ostree.linux"] // empty' <<< "${INSPECT}")"
-              [[ "${KERNEL}" =~ ^[0-9]+\.[0-9]+ ]]
-              KERNEL_MM="${BASH_REMATCH[0]}"
-              if [[ "$(printf '%s\n' "${LINUX_MAXIMUM}" "${KERNEL_MM}" | sort -V | tail -n1)" == "${LINUX_MAXIMUM}" ]]; then
-                TAG="${candidate}"
-                break
-              fi
-            done
-            if [[ -z "${TAG}" ]]; then
-              echo "No stable ${IMAGE} tag supports ZFS ${ZFS_VERSION} (Linux <= ${LINUX_MAXIMUM})." >&2
-              exit 1
-            fi
-            echo "::warning::Using older base ${IMAGE}:${TAG} for ZFS compatibility; base security updates may be delayed."
-          fi
-          echo "Base: ${IMAGE}:${TAG}, kernel: ${KERNEL}, ZFS: ${ZFS_VERSION}"
+          # Fall back to the image digest so a missing label never reuses stale RPMs.
+          KERNEL="${KERNEL:-$(jq -r '.Digest' <<< "${INSPECT}" | tr ':' '-')}"
+          ZFS_VERSION="$(sed -n 's/^ARG ZFS_VERSION="\(.*\)"/\1/p' Containerfile)"
+          echo "Base kernel: ${KERNEL}, ZFS: ${ZFS_VERSION}"
           # Pin both builds below to the inspected image so the kernel matches the key.
-          echo "source_tag=${TAG}@$(jq -r '.Digest' <<< "${INSPECT}")" >> "$GITHUB_OUTPUT"
+          echo "source_tag=stable@$(jq -r '.Digest' <<< "${INSPECT}")" >> "$GITHUB_OUTPUT"
           echo "key=zfs-rpms-${{ matrix.source_image }}-${KERNEL}-${ZFS_VERSION}-${{ hashFiles('build-zfs.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Restore cached ZFS RPMs
