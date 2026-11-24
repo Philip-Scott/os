@@ -111,6 +111,16 @@ To update, review the upstream changes and copy `keychron_battery.c` and
 reapply the Link-KM changes (and upstream PR 6 if it has not been released yet). Like ZFS, the module is unsigned and will not
 load while Secure Boot is enabled.
 
+# AppImages
+
+Every user has an `~/Applications` folder: AppImages dropped into it are added
+to the application menu and removed from it when deleted. This is
+[appimage-integrator](https://github.com/apapamarkou/appimage-integrator),
+vendored in `appimage-integrator/` so the build never fetches it, and run as a
+globally enabled systemd user service. See
+[`appimage-integrator/README.md`](appimage-integrator/README.md) for the
+installed paths and how to update it.
+
 # Purpose
 
 This repository is meant to be a template for building your own custom Universal Blue image. This template is the recommended way to make customizations to any image published by the Universal Blue Project:

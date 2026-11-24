@@ -1,0 +1,15 @@
+[Unit]
+Description=AppImage Integrator
+Documentation=https://github.com/apapamarkou/appimage-integrator
+After=default.target
+# Skip system accounts such as the display manager's greeter session.
+ConditionUser=!@system
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/appimage-integrator/appimage-integrator-observer
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

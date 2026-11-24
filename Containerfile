@@ -48,6 +48,8 @@ COPY root/ /
 
 COPY build.sh /tmp/build.sh
 COPY kwin-scripts /tmp/kwin-scripts
+# Vendored AppImage integrator, see appimage-integrator/README.md.
+COPY appimage-integrator /tmp/appimage-integrator
 COPY --from=zfs-builder /var/cache/zfs-rpms /tmp/zfs-rpms
 COPY --from=keychron-battery-builder /var/cache/keychron-battery /tmp/keychron-battery
 
