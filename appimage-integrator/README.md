@@ -3,13 +3,15 @@
 Vendored copy of [apapamarkou/appimage-integrator](https://github.com/apapamarkou/appimage-integrator)
 (GPL-3.0, see `LICENSE`), taken from commit
 [`4a8e902`](https://github.com/apapamarkou/appimage-integrator/tree/4a8e9026fd7f9144cbb326c11693372a91da8b2a).
-The files in `src/` are unmodified so they can be diffed against upstream when
-updating.
+The files in `src/` are upstream's, with these local changes:
+
+- `appimage-integrator-observer` only watches `~/Applications`. Upstream also
+  watches `~/Downloads` and offers to move new AppImages from there; that code
+  was removed, along with the `appimage-integrator-downloaded` script it ran.
 
 Every user gets an `~/Applications` folder. Dropping an AppImage into it adds
 the app (name, icon, category) to the application menu; removing it removes the
-menu entry. AppImages landing in `~/Downloads` trigger a prompt offering to move
-them into `~/Applications`.
+menu entry.
 
 ## How it is installed on the image
 
@@ -41,7 +43,8 @@ journalctl --user -t appimage-integrator
 
 ## Updating
 
-Copy `src/` (except `appimage-integrator.conf` and `notes.txt`) and `LICENSE`
-from the new upstream commit, update the commit above, and check whether the
-upstream `install` script changed the service unit, config keys or runtime
-dependencies.
+Copy `src/` (except `appimage-integrator.conf`, `notes.txt` and
+`appimage-integrator-downloaded`) and `LICENSE` from the new upstream commit,
+reapply the local changes listed above, and update the commit above. Also check
+whether the upstream `install` script changed the service unit, config keys or
+runtime dependencies.
