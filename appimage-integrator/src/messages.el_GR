@@ -17,7 +17,6 @@ DESKTOP_FILE=Αρχείο desktop
 ICON_FILE=Αρχείο εικονιδίου
 NO_DESKTOP_FILE=Δεν βρέθηκε αρχείο .desktop στο AppImage
 NO_ICON_FILE=Δεν βρέθηκε αρχείο εικονιδίου στο AppImage
-CLEANUP=Καθαρισμός...
 ANOTHER_INSTANCE_RUNNING=Εκτελείται άλλη παρουσία του script
 WATCHING=Παρακολούθηση για
 EVENT=Συμβάν

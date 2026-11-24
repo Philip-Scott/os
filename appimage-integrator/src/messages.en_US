@@ -17,7 +17,6 @@ DESKTOP_FILE=Desktop file
 ICON_FILE=Icon file
 NO_DESKTOP_FILE=No .desktop file found in the AppImage
 NO_ICON_FILE=No icon file found in the AppImage
-CLEANUP=Cleanup...
 ANOTHER_INSTANCE_RUNNING=Another instance of the script is running
 WATCHING=Watch for
 EVENT=Event

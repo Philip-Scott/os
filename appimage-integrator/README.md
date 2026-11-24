@@ -8,6 +8,14 @@ The files in `src/` are upstream's, with these local changes:
 - `appimage-integrator-observer` only watches `~/Applications`. Upstream also
   watches `~/Downloads` and offers to move new AppImages from there; that code
   was removed, along with the `appimage-integrator-downloaded` script it ran.
+- Dead code removed: the notification action button in `notify.sh` (only used
+  by the Downloads prompt), the always-failing `systemd-cat --user` attempt in
+  `logging.sh`, the macOS `stat -f%z` fallback and a duplicate work directory
+  removal in `appimage-integrator-extract`, the unused `keep` config option, and
+  installer/uninstaller strings in the `messages.*` files.
+- `appimage-integrator-extract` looks up the `DESKTOP_FILE` and
+  `NO_DESKTOP_FILE` messages in upper case so they match the `messages.*`
+  files.
 
 Every user gets an `~/Applications` folder. Dropping an AppImage into it adds
 the app (name, icon, category) to the application menu; removing it removes the
