@@ -91,8 +91,7 @@ if [[ ! -x "$cleanup_script" ]]; then
 	exit 1
 fi
 
-# Start watching the Applications directory (Downloads is not watched, see
-# appimage-integrator/README.md)
+# Start watching the Applications directory
 log info "$(get_translated "WATCHING") $watch_directory"
 inotifywait -m -e create,moved_to,delete,moved_from "$watch_directory" | while read -r directory event file; do
 	log debug "$(get_translated "EVENT") = $event $file in $directory"
