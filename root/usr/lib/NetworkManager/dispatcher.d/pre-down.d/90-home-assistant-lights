@@ -1,0 +1,27 @@
+#!/bin/bash
+# NetworkManager disconnects every device as soon as logind announces a
+# suspend (and, with connection.down-on-poweroff, a shutdown), before
+# sleep.target is reached. Pre-down scripts run while the connection is still
+# up and NetworkManager waits for them, so the lights are turned off here.
+# logind only waits InhibitDelayMaxSec (5s by default), so keep this quick.
+# Arguments: $1 interface, $2 action. Environment: CONNECTION_UUID.
+
+[ "$2" = "pre-down" ] || exit 0
+[ -f /etc/home-assistant-lights.env ] || exit 0
+
+preparing() {
+    busctl get-property org.freedesktop.login1 /org/freedesktop/login1 \
+        org.freedesktop.login1.Manager "$1" 2>/dev/null | grep -q true
+}
+# Ignore ordinary disconnects (leaving range, toggling Wi-Fi, ...).
+preparing PreparingForSleep || preparing PreparingForShutdown || exit 0
+
+# The SSID of the connection being taken down, empty when it isn't Wi-Fi.
+SSID=""
+if [ -n "${CONNECTION_UUID:-}" ]; then
+    SSID="$(nmcli --escape no --get-values 802-11-wireless.ssid connection show uuid "${CONNECTION_UUID}" 2>/dev/null)"
+fi
+
+HA_LIGHTS_CURRENT_SSIDS="${SSID}" HA_LIGHTS_RETRIES=0 HA_LIGHTS_MAX_TIME=3 \
+    /usr/libexec/home-assistant-lights off 2>&1 | logger -t home-assistant-lights
+exit 0

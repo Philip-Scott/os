@@ -216,7 +216,7 @@ the config on each machine (the units do nothing until it exists):
 sudo install -m600 /usr/share/home-assistant-lights/home-assistant-lights.env.example /etc/home-assistant-lights.env
 sudoedit /etc/home-assistant-lights.env   # set HA_LIGHTS_ON_URL / HA_LIGHTS_OFF_URL
 sudo systemctl start home-assistant-lights.service
-journalctl -u home-assistant-lights -u home-assistant-lights-sleep
+journalctl -u home-assistant-lights -u home-assistant-lights-sleep -t home-assistant-lights
 ```
 
 Leave a URL empty to skip that action. The URLs are never logged.
@@ -227,3 +227,17 @@ only called while connected to one of those Wi-Fi networks, for example
 NetworkManager. After boot/resume the script waits up to `HA_LIGHTS_WIFI_WAIT`
 seconds (default 30) for Wi-Fi to connect. When turning the lights off it
 doesn't wait, so shutdown and suspend aren't delayed.
+
+The "off" call has to go out while the network is still up:
+
+- **Shutdown:** `home-assistant-lights.service` is ordered after
+  `network-online.target` and `NetworkManager.service`, so it is stopped (and
+  sends "off") before NetworkManager and the Wi-Fi supplicant are stopped.
+- **Suspend:** NetworkManager disconnects all devices as soon as logind
+  announces the suspend, before `sleep.target` is reached. The NetworkManager
+  pre-down hook
+  `/usr/lib/NetworkManager/dispatcher.d/pre-down.d/90-home-assistant-lights`
+  therefore sends "off" while the connection is still up, but only when logind
+  is preparing for sleep or shutdown (not on ordinary disconnects). logind waits
+  at most `InhibitDelayMaxSec` (5s) for this, so the call isn't retried. The
+  sleep unit's own "off" is skipped once the hook has sent it.

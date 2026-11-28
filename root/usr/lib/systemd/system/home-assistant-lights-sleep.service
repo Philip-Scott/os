@@ -10,9 +10,11 @@ ConditionPathExists=/etc/home-assistant-lights.env
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-EnvironmentFile=/etc/home-assistant-lights.env
-# Few retries before sleeping so suspend is not held up.
-ExecStart=/usr/bin/env HA_LIGHTS_RETRIES=1 /usr/libexec/home-assistant-lights off
+# NetworkManager has normally disconnected by now and the NetworkManager
+# pre-down hook already turned the lights off, in which case this is skipped.
+# It still covers devices NetworkManager keeps up (e.g. Wake-on-LAN). '-' keeps
+# the unit active on failure so the lights still turn on after resume.
+ExecStart=-/usr/bin/env HA_LIGHTS_RETRIES=0 HA_LIGHTS_MAX_TIME=3 /usr/libexec/home-assistant-lights off
 # The network may take a while to come back after resume.
 ExecStop=/usr/bin/env HA_LIGHTS_RETRIES=15 /usr/libexec/home-assistant-lights on
 TimeoutStartSec=30
