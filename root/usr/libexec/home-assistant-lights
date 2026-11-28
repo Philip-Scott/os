@@ -1,0 +1,33 @@
+#!/bin/bash
+# Calls a Home Assistant webhook to turn the lights on or off.
+# Usage: home-assistant-lights on|off
+# The webhook URLs are read from the environment, see
+# /usr/share/home-assistant-lights/home-assistant-lights.env.example.
+set -euo pipefail
+
+case "${1:-}" in
+    on) URL="${HA_LIGHTS_ON_URL:-}" ;;
+    off) URL="${HA_LIGHTS_OFF_URL:-}" ;;
+    *)
+        echo "usage: $0 on|off" >&2
+        exit 2
+        ;;
+esac
+
+if [ -z "${URL}" ]; then
+    echo "No webhook configured for '$1', skipping"
+    exit 0
+fi
+
+# The URL contains the webhook secret, so it is never printed. Retries cover
+# the network still coming up after boot or resume.
+if curl --silent --show-error --fail --output /dev/null \
+        --request POST \
+        --connect-timeout 5 --max-time 10 \
+        --retry "${HA_LIGHTS_RETRIES:-5}" --retry-delay 2 --retry-all-errors \
+        "${URL}"; then
+    echo "Lights turned $1"
+else
+    echo "Failed to turn lights $1" >&2
+    exit 1
+fi

@@ -200,3 +200,23 @@ This provides users a method of verifying the image.
     ```
 
 4. Commit the `cosign.pub` file into your git repository
+
+# Home Assistant lights
+
+`home-assistant-lights.service` calls a Home Assistant webhook to turn the
+lights on at boot and off at shutdown. `home-assistant-lights-sleep.service`
+turns them off before suspend/hibernate and back on after resume. Each call is
+a `POST` to a [webhook trigger](https://www.home-assistant.io/docs/automation/trigger/#webhook-trigger)
+of a Home Assistant automation.
+
+The webhook URLs contain secrets, so they are **not** part of the image. Create
+the config on each machine (the units do nothing until it exists):
+
+```bash
+sudo install -m600 /usr/share/home-assistant-lights/home-assistant-lights.env.example /etc/home-assistant-lights.env
+sudoedit /etc/home-assistant-lights.env   # set HA_LIGHTS_ON_URL / HA_LIGHTS_OFF_URL
+sudo systemctl start home-assistant-lights.service
+journalctl -u home-assistant-lights -u home-assistant-lights-sleep
+```
+
+Leave a URL empty to skip that action. The URLs are never logged.
