@@ -19,6 +19,51 @@ if [ -z "${URL}" ]; then
     exit 0
 fi
 
+# Prints the SSIDs of the active Wi-Fi connections, one per line. nmcli's
+# terse output escapes ':' and '\' inside fields.
+active_ssids() {
+    nmcli --terse --fields ACTIVE,SSID device wifi list --rescan no 2>/dev/null \
+        | sed -n 's/^yes://p' \
+        | sed -e 's/\\:/:/g' -e 's/\\\\/\\/g'
+}
+
+# Succeeds when one of the active Wi-Fi networks is in HA_LIGHTS_WIFI_SSIDS
+# (comma separated, surrounding whitespace ignored).
+on_allowed_wifi() {
+    local ssid allowed
+    local -a allowed_list
+    IFS=',' read -r -a allowed_list <<< "${HA_LIGHTS_WIFI_SSIDS}"
+    while IFS= read -r ssid; do
+        for allowed in "${allowed_list[@]}"; do
+            allowed="${allowed#"${allowed%%[![:space:]]*}"}"
+            allowed="${allowed%"${allowed##*[![:space:]]}"}"
+            if [ -n "${allowed}" ] && [ "${ssid}" = "${allowed}" ]; then
+                return 0
+            fi
+        done
+    done < <(active_ssids)
+    return 1
+}
+
+if [ -n "${HA_LIGHTS_WIFI_SSIDS:-}" ]; then
+    # After boot or resume Wi-Fi may still be connecting, so wait for it
+    # before deciding. Never wait when turning off, to avoid delaying
+    # shutdown or suspend.
+    WAIT=0
+    if [ "$1" = "on" ]; then
+        WAIT="${HA_LIGHTS_WIFI_WAIT:-30}"
+    fi
+    while ! on_allowed_wifi; do
+        # Connected to some other Wi-Fi network: no point in waiting.
+        if [ -n "$(active_ssids)" ] || [ "${WAIT}" -le 0 ]; then
+            echo "Not connected to an allowed Wi-Fi network, skipping"
+            exit 0
+        fi
+        sleep 1
+        WAIT=$((WAIT - 1))
+    done
+fi
+
 # The URL contains the webhook secret, so it is never printed. Retries cover
 # the network still coming up after boot or resume.
 if curl --silent --show-error --fail --output /dev/null \

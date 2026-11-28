@@ -3,7 +3,7 @@ Description=Turn Home Assistant lights on at boot and off at shutdown
 # Ordered after the network so that, on shutdown, the "off" webhook is sent
 # before the network goes down.
 Wants=network-online.target
-After=network-online.target
+After=network-online.target NetworkManager.service
 ConditionPathExists=/etc/home-assistant-lights.env
 
 [Service]
@@ -12,7 +12,7 @@ RemainAfterExit=yes
 EnvironmentFile=/etc/home-assistant-lights.env
 ExecStart=/usr/libexec/home-assistant-lights on
 ExecStop=/usr/libexec/home-assistant-lights off
-TimeoutStartSec=90
+TimeoutStartSec=120
 # Keep shutdown fast if Home Assistant is unreachable.
 TimeoutStopSec=20
 

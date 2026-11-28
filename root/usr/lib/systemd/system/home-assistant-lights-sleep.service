@@ -3,6 +3,7 @@ Description=Turn Home Assistant lights off on suspend and on after resume
 # Started before suspend/hibernate; stopped again once sleep.target is left
 # on resume, which runs ExecStop.
 Before=sleep.target
+After=NetworkManager.service
 StopWhenUnneeded=yes
 ConditionPathExists=/etc/home-assistant-lights.env
 
@@ -15,7 +16,7 @@ ExecStart=/usr/bin/env HA_LIGHTS_RETRIES=1 /usr/libexec/home-assistant-lights of
 # The network may take a while to come back after resume.
 ExecStop=/usr/bin/env HA_LIGHTS_RETRIES=15 /usr/libexec/home-assistant-lights on
 TimeoutStartSec=30
-TimeoutStopSec=90
+TimeoutStopSec=120
 
 [Install]
 WantedBy=sleep.target

@@ -220,3 +220,10 @@ journalctl -u home-assistant-lights -u home-assistant-lights-sleep
 ```
 
 Leave a URL empty to skip that action. The URLs are never logged.
+
+On a laptop, set `HA_LIGHTS_WIFI_SSIDS` (comma separated) so the webhooks are
+only called while connected to one of those Wi-Fi networks, for example
+`HA_LIGHTS_WIFI_SSIDS=Home WiFi,Home WiFi 5G`. The active SSID comes from
+NetworkManager. After boot/resume the script waits up to `HA_LIGHTS_WIFI_WAIT`
+seconds (default 30) for Wi-Fi to connect. When turning the lights off it
+doesn't wait, so shutdown and suspend aren't delayed.
