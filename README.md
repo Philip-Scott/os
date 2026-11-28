@@ -111,6 +111,26 @@ To update, review the upstream changes and copy `keychron_battery.c` and
 reapply the Link-KM changes (and upstream PR 6 if it has not been released yet). Like ZFS, the module is unsigned and will not
 load while Secure Boot is enabled.
 
+# Wake from suspend
+
+Only the power button wakes the machine from suspend; keyboards and mice don't.
+`root/etc/udev/rules.d/90-input-no-wakeup.rules` handles this in two places:
+
+- For every USB keyboard or mouse (including wireless receivers),
+  `/usr/libexec/input-no-wakeup` disables remote wakeup on the device that
+  owns it.
+- Every USB controller (PCI class `0x0c03`) has wakeup disabled. These are the
+  `XHC`/`XHC0`/`PTXH` entries in `/proc/acpi/wakeup`, so a device that ignores
+  the first setting still can't wake the machine. This also stops other USB
+  devices (for example USB network adapters with Wake-on-LAN) from waking it.
+
+Check it with:
+
+```bash
+cat /proc/acpi/wakeup | grep -i xh   # USB controllers should be *disabled
+grep . /sys/bus/usb/devices/*/power/wakeup
+```
+
 # AppImages
 
 Every user has an `~/Applications` folder: AppImages dropped into it are added

@@ -81,6 +81,10 @@ systemctl enable home-assistant-lights.service home-assistant-lights-sleep.servi
 chmod 755 /usr/libexec/home-assistant-lights \
     /usr/lib/NetworkManager/dispatcher.d/pre-down.d/90-home-assistant-lights
 
+# Run by 90-input-no-wakeup.rules to keep keyboards and mice from waking the
+# machine from suspend.
+chmod 755 /usr/libexec/input-no-wakeup
+
 dnf5 clean all
 rm -rf /tmp/zfs-rpms /tmp/keychron-battery /tmp/kwin-scripts /tmp/appimage-integrator
 rm -f /tmp/build.sh

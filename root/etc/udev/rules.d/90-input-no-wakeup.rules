@@ -1,0 +1,13 @@
+# Keyboards and mice (and their wireless receivers) must not wake the computer
+# from suspend; only the power button does. usbhid enables remote wakeup on
+# boot keyboards, which wakes the machine on stray events. Disable it on the
+# USB device that each keyboard/mouse belongs to.
+ACTION=="add", SUBSYSTEM=="input", KERNEL=="input[0-9]*", SUBSYSTEMS=="usb", ENV{ID_INPUT_KEYBOARD}=="1", RUN+="/usr/libexec/input-no-wakeup"
+ACTION=="add", SUBSYSTEM=="input", KERNEL=="input[0-9]*", SUBSYSTEMS=="usb", ENV{ID_INPUT_MOUSE}=="1", RUN+="/usr/libexec/input-no-wakeup"
+
+# Same at the ACPI level: stop the USB controllers (PCI class 0x0c03, the
+# XHC/XHC0/PTXH entries in /proc/acpi/wakeup) from waking the machine, so
+# devices that ignore the setting above cannot wake it either. Writing
+# power/wakeup is what toggling them in /proc/acpi/wakeup does, but it does not
+# depend on board specific ACPI names.
+ACTION=="add", SUBSYSTEM=="pci", ATTR{class}=="0x0c03*", ATTR{power/wakeup}="disabled"

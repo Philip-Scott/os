@@ -1,0 +1,11 @@
+#!/bin/sh
+# Run by udev (90-input-no-wakeup.rules) for a USB keyboard or mouse input
+# device. Walks up from it to the USB device and disables its remote wakeup.
+dir="/sys${DEVPATH}"
+while [ "${dir}" != "/sys" ] && [ -n "${dir}" ]; do
+    if [ -f "${dir}/idVendor" ] && [ -f "${dir}/power/wakeup" ]; then
+        echo disabled > "${dir}/power/wakeup"
+        exit 0
+    fi
+    dir="${dir%/*}"
+done
