@@ -200,3 +200,44 @@ This provides users a method of verifying the image.
     ```
 
 4. Commit the `cosign.pub` file into your git repository
+
+# Home Assistant lights
+
+`home-assistant-lights.service` calls a Home Assistant webhook to turn the
+lights on at boot and off at shutdown. `home-assistant-lights-sleep.service`
+turns them off before suspend/hibernate and back on after resume. Each call is
+a `POST` to a [webhook trigger](https://www.home-assistant.io/docs/automation/trigger/#webhook-trigger)
+of a Home Assistant automation.
+
+The webhook URLs contain secrets, so they are **not** part of the image. Create
+the config on each machine (the units do nothing until it exists):
+
+```bash
+sudo install -m600 /usr/share/home-assistant-lights/home-assistant-lights.env.example /etc/home-assistant-lights.env
+sudoedit /etc/home-assistant-lights.env   # set HA_LIGHTS_ON_URL / HA_LIGHTS_OFF_URL
+sudo systemctl start home-assistant-lights.service
+journalctl -u home-assistant-lights -u home-assistant-lights-sleep -t home-assistant-lights
+```
+
+Leave a URL empty to skip that action. The URLs are never logged.
+
+On a laptop, set `HA_LIGHTS_WIFI_SSIDS` (comma separated) so the webhooks are
+only called while connected to one of those Wi-Fi networks, for example
+`HA_LIGHTS_WIFI_SSIDS=Home WiFi,Home WiFi 5G`. The active SSID comes from
+NetworkManager. After boot/resume the script waits up to `HA_LIGHTS_WIFI_WAIT`
+seconds (default 30) for Wi-Fi to connect. When turning the lights off it
+doesn't wait, so shutdown and suspend aren't delayed.
+
+The "off" call has to go out while the network is still up:
+
+- **Shutdown:** `home-assistant-lights.service` is ordered after
+  `network-online.target` and `NetworkManager.service`, so it is stopped (and
+  sends "off") before NetworkManager and the Wi-Fi supplicant are stopped.
+- **Suspend:** NetworkManager disconnects all devices as soon as logind
+  announces the suspend, before `sleep.target` is reached. The NetworkManager
+  pre-down hook
+  `/usr/lib/NetworkManager/dispatcher.d/pre-down.d/90-home-assistant-lights`
+  therefore sends "off" while the connection is still up, but only when logind
+  is preparing for sleep or shutdown (not on ordinary disconnects). logind waits
+  at most `InhibitDelayMaxSec` (5s) for this, so the call isn't retried. The
+  sleep unit's own "off" is skipped once the hook has sent it.

@@ -73,6 +73,14 @@ ls -lar
 # kpackagetool6 --type=KWin/Script -i ./kwin-scripts/virtual-desktops-only-on-primary/ --global
 systemctl enable podman.socket
 
+# Home Assistant lights (units and script come from root/). Both units are
+# skipped until /etc/home-assistant-lights.env is created on the machine, so
+# the webhook secrets never end up in the image.
+systemctl enable home-assistant-lights.service home-assistant-lights-sleep.service
+# NetworkManager ignores dispatcher scripts that are group/world writable.
+chmod 755 /usr/libexec/home-assistant-lights \
+    /usr/lib/NetworkManager/dispatcher.d/pre-down.d/90-home-assistant-lights
+
 dnf5 clean all
 rm -rf /tmp/zfs-rpms /tmp/keychron-battery /tmp/kwin-scripts /tmp/appimage-integrator
 rm -f /tmp/build.sh

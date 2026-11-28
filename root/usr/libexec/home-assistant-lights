@@ -1,0 +1,138 @@
+#!/bin/bash
+# Calls a Home Assistant webhook to turn the lights on or off.
+# Usage: home-assistant-lights on|off
+# Settings are read from /etc/home-assistant-lights.env, see
+# /usr/share/home-assistant-lights/home-assistant-lights.env.example.
+# Variables already set in the environment take precedence over the file.
+#
+# Internal environment overrides (used by the units and the NetworkManager
+# pre-down hook):
+#   HA_LIGHTS_RETRIES        curl retries (default 5)
+#   HA_LIGHTS_MAX_TIME       seconds per curl attempt (default 10)
+#   HA_LIGHTS_CURRENT_SSIDS  active SSID to use instead of asking nmcli
+set -euo pipefail
+
+CONFIG="${HA_LIGHTS_CONFIG:-/etc/home-assistant-lights.env}"
+STATE_DIR="${HA_LIGHTS_STATE_DIR:-/run/home-assistant-lights}"
+# A successful "off" is remembered for this long, so the units don't send it
+# again right after the NetworkManager hook already did.
+OFF_SENT_TTL=120
+
+# Reads HA_LIGHTS_* assignments in systemd EnvironmentFile style (KEY=value,
+# optionally quoted, '#' comments). The file is parsed, never sourced.
+load_config() {
+    local line key value
+    [ -r "${CONFIG}" ] || return 0
+    while IFS= read -r line || [ -n "${line}" ]; do
+        case "${line}" in '' | '#'* | ';'*) continue ;; esac
+        [[ "${line}" == *=* ]] || continue
+        key="${line%%=*}"
+        key="${key//[[:space:]]/}"
+        value="${line#*=}"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
+        if [[ "${value}" =~ ^\"(.*)\"$ || "${value}" =~ ^\'(.*)\'$ ]]; then
+            value="${BASH_REMATCH[1]}"
+        fi
+        [[ "${key}" =~ ^HA_LIGHTS_[A-Z_]+$ ]] || continue
+        declare -p "${key}" &>/dev/null && continue
+        declare -gx "${key}=${value}"
+    done < "${CONFIG}"
+}
+
+case "${1:-}" in
+    on | off) ACTION="$1" ;;
+    *)
+        echo "usage: $0 on|off" >&2
+        exit 2
+        ;;
+esac
+
+load_config
+
+if [ "${ACTION}" = "on" ]; then
+    URL="${HA_LIGHTS_ON_URL:-}"
+else
+    URL="${HA_LIGHTS_OFF_URL:-}"
+fi
+
+mkdir -p "${STATE_DIR}"
+exec 9> "${STATE_DIR}/lock"
+flock 9
+
+OFF_SENT="${STATE_DIR}/off-sent"
+if [ "${ACTION}" = "on" ]; then
+    rm -f "${OFF_SENT}"
+elif [ -f "${OFF_SENT}" ] \
+        && [ $(($(date +%s) - $(stat -c %Y "${OFF_SENT}"))) -lt "${OFF_SENT_TTL}" ]; then
+    echo "Lights were already turned off, skipping"
+    exit 0
+fi
+
+if [ -z "${URL}" ]; then
+    echo "No webhook configured for '${ACTION}', skipping"
+    exit 0
+fi
+
+# Prints the SSIDs of the active Wi-Fi connections, one per line. nmcli's
+# terse output escapes ':' and '\' inside fields.
+active_ssids() {
+    if [ -n "${HA_LIGHTS_CURRENT_SSIDS+x}" ]; then
+        [ -z "${HA_LIGHTS_CURRENT_SSIDS}" ] || printf '%s\n' "${HA_LIGHTS_CURRENT_SSIDS}"
+        return 0
+    fi
+    nmcli --terse --fields ACTIVE,SSID device wifi list --rescan no 2>/dev/null \
+        | sed -n 's/^yes://p' \
+        | sed -e 's/\\:/:/g' -e 's/\\\\/\\/g'
+}
+
+# Succeeds when one of the active Wi-Fi networks is in HA_LIGHTS_WIFI_SSIDS
+# (comma separated, surrounding whitespace ignored).
+on_allowed_wifi() {
+    local ssid allowed
+    local -a allowed_list
+    IFS=',' read -r -a allowed_list <<< "${HA_LIGHTS_WIFI_SSIDS}"
+    while IFS= read -r ssid; do
+        for allowed in "${allowed_list[@]}"; do
+            allowed="${allowed#"${allowed%%[![:space:]]*}"}"
+            allowed="${allowed%"${allowed##*[![:space:]]}"}"
+            if [ -n "${allowed}" ] && [ "${ssid}" = "${allowed}" ]; then
+                return 0
+            fi
+        done
+    done < <(active_ssids)
+    return 1
+}
+
+if [ -n "${HA_LIGHTS_WIFI_SSIDS:-}" ]; then
+    # After boot or resume Wi-Fi may still be connecting, so wait for it
+    # before deciding. Never wait when turning off, to avoid delaying
+    # shutdown or suspend.
+    WAIT=0
+    if [ "${ACTION}" = "on" ]; then
+        WAIT="${HA_LIGHTS_WIFI_WAIT:-30}"
+    fi
+    while ! on_allowed_wifi; do
+        # Connected to some other Wi-Fi network: no point in waiting.
+        if [ -n "$(active_ssids)" ] || [ "${WAIT}" -le 0 ]; then
+            echo "Not connected to an allowed Wi-Fi network, skipping"
+            exit 0
+        fi
+        sleep 1
+        WAIT=$((WAIT - 1))
+    done
+fi
+
+# The URL contains the webhook secret, so it is never printed. Retries cover
+# the network still coming up after boot or resume.
+if curl --silent --show-error --fail --output /dev/null \
+        --request POST \
+        --connect-timeout 5 --max-time "${HA_LIGHTS_MAX_TIME:-10}" \
+        --retry "${HA_LIGHTS_RETRIES:-5}" --retry-delay 2 --retry-all-errors \
+        "${URL}"; then
+    [ "${ACTION}" = "off" ] && touch "${OFF_SENT}"
+    echo "Lights turned ${ACTION}"
+else
+    echo "Failed to turn lights ${ACTION}" >&2
+    exit 1
+fi
