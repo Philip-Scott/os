@@ -4,6 +4,8 @@
 # sleep.target is reached. Pre-down scripts run while the connection is still
 # up and NetworkManager waits for them, so the lights are turned off here.
 # logind only waits InhibitDelayMaxSec (5s by default), so keep this quick.
+# Addresses, routes and DNS from DHCP are already gone when this runs; only a
+# static address on the connection lets the call through (see README).
 # Arguments: $1 interface, $2 action. Environment: CONNECTION_UUID.
 
 [ "$2" = "pre-down" ] || exit 0

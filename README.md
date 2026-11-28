@@ -241,3 +241,18 @@ The "off" call has to go out while the network is still up:
   is preparing for sleep or shutdown (not on ordinary disconnects). logind waits
   at most `InhibitDelayMaxSec` (5s) for this, so the call isn't retried. The
   sleep unit's own "off" is skipped once the hook has sent it.
+
+> [!IMPORTANT]
+> NetworkManager drops the addresses, routes and DNS servers it got from DHCP
+> as soon as the teardown starts, before pre-down hooks run. Only statically
+> configured addresses survive until the hook has finished. For "off" to work
+> on suspend, give the machine a static IPv4 address on the home network, and
+> point `HA_LIGHTS_OFF_URL` at Home Assistant's IP address instead of its
+> hostname:
+>
+> ```bash
+> sudo nmcli connection modify "<Home WiFi>" \
+>     ipv4.method manual ipv4.addresses 192.168.1.50/24 \
+>     ipv4.gateway 192.168.1.1 ipv4.dns 192.168.1.1
+> sudo nmcli connection up "<Home WiFi>"
+> ```
